@@ -1,11 +1,12 @@
 package com.sistemasoperativos.ejercicio_resuelto;
 
 import java.util.UUID;
+import java.util.concurrent.Semaphore;
 
 public class Vehiculo extends Thread {
 	private Direccion direccion;
 	private UUID uuid;
-	private Boolean termino;
+	private Semaphore espacioEnPuente;
 
 	public Vehiculo(Direccion direccion) {
 		this.direccion = direccion;
@@ -22,10 +23,10 @@ public class Vehiculo extends Thread {
 		try {
 			System.out.println(this.toString() + ": Avanza hacia el " + direccion);
 
-			//Simulamos el tiempo que se demora en atravezar el puente.
+			//Simulamos el tiempo que se demora en atravesar el puente.
 			sleep(5000);
 
-			termino = true;
+			espacioEnPuente.release();
 
 			System.out.println(this.toString() + ": Salio del puente");
 		} catch (InterruptedException e)
@@ -36,8 +37,8 @@ public class Vehiculo extends Thread {
 
 	}
 
-	public Boolean salio()
+	public void setSemaforo(Semaphore semaforo)
 	{
-		return termino;
+		this.espacioEnPuente = semaforo;
 	}
 }

@@ -53,8 +53,6 @@ public class Ruta extends Thread {
 			semaforo.acquire();
 			fila(direccion).add(vehiculo);
 			semaforo.release();
-
-			System.out.println(vehiculosNorte);
 		}
 		catch (InterruptedException e)
 		{

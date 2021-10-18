@@ -5,27 +5,26 @@ import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
 public class ControladorPuente extends Thread{
-	private Queue<Vehiculo> vehiculosCirculando, vehiculosNorte, vehiculosSur;
-	private Semaphore semaforo;
-	private int tiempoMaximo;
+	private Queue<Vehiculo> vehiculosNorte, vehiculosSur;
+	private Semaphore semaforo, vehiculosEnPuente;
+	private int capacidad;
 	private Direccion direccionActual = Direccion.NORTE;
-	private int timer = 0;
 
 	/**
 	 *
 	 * @param tiempo - Tiempo maximo que permanece activo un semaforo.
 	 */
 	public ControladorPuente(
-			int tiempo,
+			int capacidad,
 			Queue<Vehiculo> vehiculosNorte,
 			Queue<Vehiculo> vehiculosSur,
 			Semaphore semaforo
 	) {
 		this.semaforo = semaforo;
-		this.tiempoMaximo = tiempo * 10^6;
+		this.capacidad = capacidad;
 
-		//Vehiculos que estan circulando en el puente
-		this.vehiculosCirculando = new LinkedList<Vehiculo>();
+		//El puente tiene un tamaño maximo para 10 autos en la misma dirección
+		this.vehiculosEnPuente = new Semaphore(capacidad);
 
 		//Vehiculos esperando en el semaforo norte o sur.
 		this.vehiculosNorte = vehiculosNorte;
@@ -37,95 +36,50 @@ public class ControladorPuente extends Thread{
 	{
 		while(true)
 		{
-			timer++;
-			if(deboCambiarSentido())
+			try
 			{
-				System.out.println("Debo cambiar sentido");
-				cambiarSentido();
-
-				//El return evita que se llegue al metodo controlarAccesoDeVehiculos
-			}
-
-			controlarAccesoDeVehiculos();
-			controlarEgresoDeVehiculos();
-		}
-	}
-
-
-	private void controlarAccesoDeVehiculos()
-	{
-		Vehiculo vehiculo;
-
-		try
-		{
-
-			//Si la fila actual no esta vacia, se empuja un vehiculo al puente
-			if( !filaActual().isEmpty() )
-			{
+				vehiculosEnPuente.acquire(); //tiene que haber lugar en el puente
 				semaforo.acquire();
 
-				vehiculo = filaActual().poll();
-				vehiculosCirculando.add(vehiculo);
-				vehiculo.start();
+				//Reviso si hay mas espacio para vehiculos.
+				if( !filaActual().isEmpty() )
+				{
+					agregarVehiculo();
+				}
+				//Si no hay mas elementos en fila, el puente esta vacio y la fila siguiente tiene elementos
+				else if(!filaSiguiente().isEmpty() && noHayVehiculosCirculando())
+				{
+					//cambio el sentido de circulación del puente
+					cambiarSentido();
+					vehiculosEnPuente.release();
+				}
+				else
+				{
+					vehiculosEnPuente.release();
+				}
 
-				semaforo.release();
-
+			} catch (InterruptedException e){
+				System.out.println("Interrupcion en agregar vehiculo");
 			}
-		}
-		catch (InterruptedException e)
-		{
-			System.out.println(e);
-		}
-	}
-
-	private void controlarEgresoDeVehiculos()
-	{
-		Vehiculo vehiculo;
-
-		try
-		{
-			semaforo.acquire();
-			if(!hayVehiculosCirculando())
-			{
-				return;
-			}
-
-			vehiculo = vehiculosCirculando.peek();
-
-			if(vehiculo.salio())
-			{
-				vehiculosCirculando.poll();
-			}
-			vehiculosCirculando.remove();
 
 			semaforo.release();
-		}catch (InterruptedException e)
-		{
-			System.out.println(e);
-		}
 
+		}
 	}
 
-	private boolean deboCambiarSentido()
+	private void agregarVehiculo()
 	{
-		if(timer % (10^6) == 0)
-		{
+		Vehiculo vehiculo;
+		vehiculo = filaActual().poll();
 
-			System.out.println("Fila actual: " + filaActual().size() + "\nFila siguiente: " + filaSiguiente().size() + "\nCirculan: " + vehiculosCirculando.size());
-		}
-		//Si la fila actual esta vacia pero la siguiente no, se cambia el sentido.
-		if(filaActual().isEmpty() && !filaSiguiente().isEmpty())
-		{
-			return true;
-		}
-
-		//Si la fila siguiente no esta vacia, y se termino el tiempo, se cambia el sentido.
-		return timer >= tiempoMaximo && !filaSiguiente().isEmpty();
+		//Le paso el semaforo al vehiculo asi lo administra el.
+		vehiculo.setSemaforo(vehiculosEnPuente);
+		vehiculo.start();
 	}
 
-	private boolean hayVehiculosCirculando()
+	private boolean noHayVehiculosCirculando()
 	{
-		return !vehiculosCirculando.isEmpty();
+		return vehiculosEnPuente.availablePermits() == capacidad - 1;
 	}
 
 	private Queue<Vehiculo> filaActual()
@@ -144,16 +98,6 @@ public class ControladorPuente extends Thread{
 
 	private void cambiarSentido()
 	{
-		System.out.println("Semaforo:" + direccionActual);
-
-		//Se espera hasta que no hayan vehiculos en el puente
-		if(hayVehiculosCirculando())
-		{
-			System.out.println("Circulan vehiculos, timer: " + (timer >= tiempoMaximo));
-			return;
-		}
-
-		//Se abre el otro semaforo
 		cambiarDireccionActual();
 		System.out.println("Semaforo:" + direccionActual);
 	}

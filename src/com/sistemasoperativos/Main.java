@@ -29,7 +29,7 @@ public class Main {
         LinkedList<Vehiculo> filaSur = new LinkedList<>();
 
         //Inicializo el puente y la ruta
-        ControladorPuente puente = new ControladorPuente(200, filaNorte, filaSur, semaforo);
+        ControladorPuente puente = new ControladorPuente(10, filaNorte, filaSur, semaforo);
         Ruta ruta = new Ruta(filaNorte,filaSur, semaforo);
 
         //Ejecuto el sistema.
