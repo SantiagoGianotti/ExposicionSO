@@ -49,7 +49,7 @@ public class ControladorPuente extends Thread{
 				//Si no hay mas elementos en fila, el puente esta vacio y la fila siguiente tiene elementos
 				else if(!filaSiguiente().isEmpty() && noHayVehiculosCirculando())
 				{
-					//cambio el sentido de circulación del puente
+					//cambio el sentido de circulación del puente.
 					cambiarSentido();
 					vehiculosEnPuente.release();
 				}
