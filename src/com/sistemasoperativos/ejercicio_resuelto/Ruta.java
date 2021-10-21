@@ -6,17 +6,18 @@ import java.util.concurrent.Semaphore;
 
 public class Ruta extends Thread {
 	private Queue<Vehiculo> vehiculosNorte, vehiculosSur;
-	private Semaphore semaforo;
+	private Semaphore mutex;
+	private int id = 0;
 
 	//La clase ruta produce los vehiculos en el norte y el sur.
 	public Ruta(
 			Queue<Vehiculo> vehiculosNorte,
 			Queue<Vehiculo> vehiculosSur,
-			Semaphore semaforo
+			Semaphore mutex
 	){
 		this.vehiculosNorte = vehiculosNorte;
 		this.vehiculosSur = vehiculosSur;
-		this.semaforo = semaforo;
+		this.mutex = mutex;
 	}
 
 	@Override
@@ -44,15 +45,17 @@ public class Ruta extends Thread {
 	{
 		Random rd = new Random();
 		Direccion direccion = rd.nextBoolean()? Direccion.NORTE : Direccion.SUR;
-		System.out.println(direccion);
 
-		Vehiculo vehiculo = new Vehiculo(direccion);
+		id++;
+
+		Vehiculo vehiculo = new Vehiculo(id, direccion);
+		System.out.println("El vehiculo " + vehiculo.getUuid() + " ingreso a la fila " + vehiculo.getDireccion());
 
 		try
 		{
-			semaforo.acquire();
+			mutex.acquire();
 			fila(direccion).add(vehiculo);
-			semaforo.release();
+			mutex.release();
 		}
 		catch (InterruptedException e)
 		{

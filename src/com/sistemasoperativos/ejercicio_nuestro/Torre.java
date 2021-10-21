@@ -6,13 +6,13 @@ import java.util.Queue;
 import java.util.concurrent.Semaphore;
 
 public class Torre extends Thread{
-	Semaphore pistasDisponibles, avionesEsperando;
+	Semaphore pistasDisponibles, mutex;
 	Queue<Avion> filaDespegando, filaAterrizando;
 
-	public Torre(int pistas, Queue<Avion> filaDespegando, Queue<Avion> filaAterrizando, Semaphore avionesEsperando) {
+	public Torre(int pistas, Queue<Avion> filaDespegando, Queue<Avion> filaAterrizando, Semaphore mutex) {
 		this.filaDespegando = filaDespegando;
 		this.filaAterrizando = filaAterrizando;
-		this.avionesEsperando = avionesEsperando;
+		this.mutex = mutex;
 		this.pistasDisponibles = new Semaphore(pistas);
 	}
 
@@ -22,13 +22,15 @@ public class Torre extends Thread{
 		{
 			try
 			{
-//				avionesEsperando.acquire(); //contador++
-				//solo ejecutamos el codigo de abajo si hay pistas disponibles
+				mutex.acquire();
+
+				//Se reserva
 				pistasDisponibles.acquire();
 
+				//Empujar los aviones que esten en fila
 				elegirAvion();
 
-//				avionesEsperando.release();
+				mutex.release();
 			}
 			catch (InterruptedException e)
 			{

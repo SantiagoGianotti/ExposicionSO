@@ -6,16 +6,16 @@ import java.util.concurrent.Semaphore;
 
 public class AvionFactory extends Thread{
 	static int id = 0;
-	Semaphore avionesEsperando;
+	Semaphore mutex;
 	Queue<Avion> filaDespegando, filaAterrizando;
 
 	public AvionFactory(
 		Queue<Avion> filaDespegando,
 		Queue<Avion> filaAterrizando,
-		Semaphore avionesEsperando
+		Semaphore mutex
 	)
 	{
-		this.avionesEsperando = avionesEsperando;
+		this.mutex = mutex;
 		this.filaAterrizando = filaAterrizando;
 		this.filaDespegando = filaDespegando;
 	}
@@ -48,13 +48,18 @@ public class AvionFactory extends Thread{
 
 		Avion avion = new Avion(id, estado);
 
-		System.out.println("Avion["+avion.id+"]: hace fila para "+ (avion.estado == Estado.ATERRIZANDO? "ATERRIZAR" : "DESPEGAR") );
 		try
 		{
+			//Cerrar mutex
+			mutex.acquire();
 
-			avionesEsperando.acquire();
+			System.out.println("Avion["+avion.id+"]: hace fila para "+ (avion.estado == Estado.ATERRIZANDO? "ATERRIZAR" : "DESPEGAR") );
+
+			//Agregar avion en una de las filas
 			fila(estado).add(avion);
-			avionesEsperando.release();
+
+			//Liberar mutex
+			mutex.release();
 
 		}catch (InterruptedException e)
 		{

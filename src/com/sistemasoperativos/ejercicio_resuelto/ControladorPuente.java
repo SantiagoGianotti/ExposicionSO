@@ -6,7 +6,7 @@ import java.util.concurrent.Semaphore;
 
 public class ControladorPuente extends Thread{
 	private Queue<Vehiculo> vehiculosNorte, vehiculosSur;
-	private Semaphore semaforo, vehiculosEnPuente;
+	private Semaphore mutex, vehiculosEnPuente;
 	private int capacidad;
 	private Direccion direccionActual = Direccion.NORTE;
 
@@ -18,9 +18,9 @@ public class ControladorPuente extends Thread{
 			int capacidad,
 			Queue<Vehiculo> vehiculosNorte,
 			Queue<Vehiculo> vehiculosSur,
-			Semaphore semaforo
+			Semaphore mutex
 	) {
-		this.semaforo = semaforo;
+		this.mutex = mutex;
 		this.capacidad = capacidad;
 
 		//El puente tiene un tamaño maximo para 10 autos en la misma dirección
@@ -38,31 +38,33 @@ public class ControladorPuente extends Thread{
 		{
 			try
 			{
-				vehiculosEnPuente.acquire(); //tiene que haber lugar en el puente
-				semaforo.acquire();
 
-				//Reviso si hay mas espacio para vehiculos.
+				//Reservo un espacio en el puente
+				vehiculosEnPuente.acquire();
+				mutex.acquire();
+
 				if( !filaActual().isEmpty() )
 				{
 					agregarVehiculo();
+					sleep(1000);
 				}
-				//Si no hay mas elementos en fila, el puente esta vacio y la fila siguiente tiene elementos
 				else if(!filaSiguiente().isEmpty() && noHayVehiculosCirculando())
 				{
-					//cambio el sentido de circulación del puente.
 					cambiarSentido();
-					vehiculosEnPuente.release();
+					vehiculosEnPuente.release();	//Libero el espacio
 				}
 				else
 				{
-					vehiculosEnPuente.release();
+					vehiculosEnPuente.release();	//Libero el espacio
 				}
+
+				mutex.release();
 
 			} catch (InterruptedException e){
 				System.out.println("Interrupcion en agregar vehiculo");
 			}
 
-			semaforo.release();
+
 
 		}
 	}
@@ -99,7 +101,7 @@ public class ControladorPuente extends Thread{
 	private void cambiarSentido()
 	{
 		cambiarDireccionActual();
-		System.out.println("Semaforo:" + direccionActual);
+		System.out.println("Los vehiculos que vienen del " + direccionActual + " estan circulando.");
 	}
 
 

@@ -6,7 +6,7 @@ import java.util.concurrent.Semaphore;
 public class Avion extends Thread
 {
 	Estado estado;
-	Semaphore avionesEnPista;
+	Semaphore pistasDisponibles;
 	int id;
 
 	public Avion(int id, Estado estado) {
@@ -17,25 +17,25 @@ public class Avion extends Thread
 	@Override
 	public void run() {
 
-		System.out.println("El avion " + this.id + " esta " + this.estado + ", se ocupo una pista.");
-		System.out.println("Pistas restantes: " + avionesEnPista.availablePermits());
-
 		try
 		{
-			//Simulamos que esta avanzando en la pista
+			System.out.println( "La torre reservo la pista para el avion["+this.id + "] que desea " + (this.estado == Estado.ATERRIZANDO? "ATERRIZAR" : "DESPEGAR") );
+			System.out.println("Pistas disponibles:" + pistasDisponibles.availablePermits());
+			//Tiempo que permanece en pista un avion
 			sleep(4500/2);
+
+			System.out.println( "El avion["+this.id + "] salio de pista \n Pistas disponibles: " + (pistasDisponibles.availablePermits() +1));
+			//El avion ya uso la pista y la libera.
+			pistasDisponibles.release();
+
 		} catch (InterruptedException e)
 		{
 			System.out.println("Excepcion en avion");
 		}
-
-		avionesEnPista.release();
-		System.out.println("El avion " + this.id + " ha " + (this.estado == Estado.ATERRIZANDO? "ATERRIZADO" : "DESPEGADO") + ", se libero una pista.");
-		System.out.println("Pistas restantes: " + avionesEnPista.availablePermits());
 	}
 
-	public void setAvionesEnPista(Semaphore avionesEnPista) {
-		this.avionesEnPista = avionesEnPista;
+	public void setAvionesEnPista(Semaphore pistasDisponibles) {
+		this.pistasDisponibles = pistasDisponibles;
 	}
 
 	@Override
